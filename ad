@@ -1,0 +1,68 @@
+#! /usr/bin/env node
+'use strict'
+const fs = require('fs')
+const path = require('path')
+const minizip = require('node-minizip')
+const argv = require('yargs')
+  .option('zip', {
+    alias: 'z', 
+    describe: 'name of file which need to be unzip',
+    demandOption: true
+  })
+  .option('title', {
+    alias: 't', 
+    describe: 'title of the web page that you want to be generated',
+    demandOption: true
+  })
+  .option('web', {
+    alias: 'w', 
+    describe: 'name of the web page that you want to be generated',
+    demandOption: true
+  })
+  .option('help', {
+    alias: 'h', 
+    describe: 'show help'
+  })
+  .argv
+const zipName = argv.zip
+const title = argv.title
+const app = argv.web 
+
+minizip.unzip(`./${zipName}.zip`, './', function(err) {
+  if (err)
+    console.log(err);
+  else
+    console.log('unzip successfully.');
+    fs.readdir(`./${zipName}`, (err, files)=>{
+      const html = geneHtml(title, files)
+      fs.writeFile(`${app}.html`, html, (err)=>console.error(err)) 
+    })
+})
+
+
+function geneHtml(title, arr) {
+  function addImages(arr){
+    let images = ''
+    arr.forEach((item) =>{
+      images += `<img src="./${zipName}/${item}" />`
+    })
+    return images
+  }
+  return `<!DOCTYPE html>
+    <html>
+      <head>
+        <title>${title}</title>
+        <style>
+          body{padding:0;margin:0;overflow-x:hidden;}
+          .wrap{overflow:hidden;position:relative;left:50%;margin-left:-1300px;}
+          img{float:left}
+        </style>
+      </head>
+      <body>
+        <div class='wrap'>
+          ${addImages(arr)}
+        </div>
+      </body>
+    </html>`
+}
+

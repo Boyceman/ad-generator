@@ -1,0 +1,14 @@
+{
+  "name": "ad",
+  "bin": {
+    "ad": "ad"
+  },
+  "dependencies": {
+    "babel-polyfill": "^6.23.0",
+    "babel-register": "^6.24.1"
+  },
+  "devDependencies": {
+    "node-minizip": "^0.3.0",
+    "yargs": "^8.0.2"
+  }
+}
