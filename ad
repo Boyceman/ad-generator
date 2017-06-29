@@ -2,11 +2,12 @@
 'use strict'
 const fs = require('fs')
 const path = require('path')
+const exec = require('child_process').exec
 const minizip = require('node-minizip')
 const argv = require('yargs')
-  .option('zip', {
-    alias: 'z', 
-    describe: 'name of file which need to be unzip',
+  .option('resource', {
+    alias: 'r', 
+    describe: 'name of directory or zip file which contain images without extension',
     demandOption: true
   })
   .option('title', {
@@ -24,30 +25,49 @@ const argv = require('yargs')
     describe: 'show help'
   })
   .argv
-const zipName = argv.zip
+const dirName = argv.resource
 const title = argv.title
-const app = argv.web 
+const web = argv.web || 'web'
 
-minizip.unzip(`./${zipName}.zip`, './', function(err) {
-  if (err)
-    console.log(err);
-  else
-    console.log('unzip successfully.');
-    fs.readdir(`./${zipName}`, (err, files)=>{
-      const html = geneHtml(title, files)
-      fs.writeFile(`${app}.html`, html, (err)=>console.error(err)) 
-    })
-})
+const dirPath = path.resolve(__dirname, dirName)
+const isDir = fs.existsSync(dirPath)
+
+if(isDir) {
+  geneFile()
+} else {
+  minizip.unzip(`${dirPath}.zip`, './', (err)=> {
+    if (err){
+      console.log(err)
+    } else {
+      console.log('unzip successfully.')
+      geneFile()
+    }
+  })
+}
+
+function geneFile() {
+  fs.readdir(dirPath, (err, files)=>{
+    const html = geneHtml(title, files)
+    fs.writeFile(`${web}.html`, html, (err)=> {
+      if(err)
+        console.error(err)
+      else
+        console.log(`generate ${web}.html successfully`)
+        const child = exec(`open ${web}.html`, function(err, stdout, stderr) {
+          if (err) throw err;
+          console.log(stdout);
+        });
+        const rm = exec('rm -rf __MACOSX', (err, stdout, stderr)=> {
+          if(err) throw err
+          console.log(stdout)
+        })
+      }
+    )
+  })
+}
 
 
 function geneHtml(title, arr) {
-  function addImages(arr){
-    let images = ''
-    arr.forEach((item) =>{
-      images += `<img src="./${zipName}/${item}" />`
-    })
-    return images
-  }
   return `<!DOCTYPE html>
     <html>
       <head>
@@ -60,9 +80,17 @@ function geneHtml(title, arr) {
       </head>
       <body>
         <div class='wrap'>
-          ${addImages(arr)}
+          ${insertImages(arr)}
         </div>
       </body>
     </html>`
 }
 
+function insertImages(arr){
+  let images = ''
+  arr.forEach((item) =>{
+    if(/.(jpg|png|gif)/.test(item))
+      images += `<img src="./${dirName}/${item}" />`
+  })
+  return images
+}
